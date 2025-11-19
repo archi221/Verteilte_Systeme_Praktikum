@@ -34,7 +34,7 @@ class server_data(Datastore):
         json_data = bytes.decode()
         data = json.loads(json_data)
         if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data["return"]}")
+            raise Exception(f"Server returned error: {data['return']}")
         return data["return"]
 
       
@@ -49,7 +49,7 @@ class server_data(Datastore):
         json_data = bytes.decode()
         data = json.loads(json_data)
         if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data["return"]}")
+            raise Exception(f"Server returned error: {data['return']}")
         return
 
 
