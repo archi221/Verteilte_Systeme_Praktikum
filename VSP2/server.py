@@ -1,9 +1,18 @@
 from socket import *
 import json
 
-number_clients = input("Anzahl Computer zum berechnen: ")
+while True:
+    try:
+        number_clients = int(input("Anzahl Computer zum berechnen: "))
+        if number_clients > 0:
+            break
+        else:
+            print("Zahl muss größer als 0 sein")
+    except ValueError:
+        print("Value Error: Ganzzahl eingeben")
+
 s = socket(AF_INET, SOCK_STREAM)
-s.bind(("172.18.27.132", 7777))
+s.bind(("127.0.0.1", 7777))
 s.listen(number_clients)
 
 clients = []  # Liste zum Speichern aller Client-Verbindungen
@@ -17,7 +26,7 @@ for i in range(number_clients):
 
 while(True):
 
-    inpup_string = list(input("Liste von nummern mit leerzeichen getrennt:"))
+    inpup_string = input("Liste von nummern mit leerzeichen getrennt:")
     numbers_as_string_list = inpup_string.split()
     number_int_list = []
     for number in numbers_as_string_list:
@@ -34,7 +43,7 @@ while(True):
             numbers_client.append(number_int_list[i])
 
             _, adress_neigbor1 = clients[i - 1]
-            _, adress_neigbor2 = clients[i + 1]
+            _, adress_neigbor2 = clients[(i + 1) % len(clients)]
 
             command = {
                         "amount": 1,
@@ -50,13 +59,16 @@ while(True):
         for i, (conn, addr) in enumerate(clients):
             amount_numbers = int(len(number_int_list) / number_clients)
             if i < number_clients - 1:
-                numbers_client = number_int_list[amount_numbers * i:amount_numbers * i + amount_numbers]
+                numbers_client = number_int_list[amount_numbers * i:
+                amount_numbers * i + amount_numbers]
             else:
                 numbers_client = number_int_list[amount_numbers * i:]
+            _, adress_neigbor1 = clients[i - 1]
+            _, adress_neigbor2 = clients[(i + 1) % len(clients)]
             command = {
                         "amount": amount_numbers,
-                        "neighbor1": clients[i-1][1], 
-                        "neighbor2": clients[i+1][1],
+                        "neighbor1": adress_neigbor1, 
+                        "neighbor2": adress_neigbor2,
                         "list_numbers": numbers_client
                     }
             json_data = json.dumps(command)
