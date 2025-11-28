@@ -16,6 +16,7 @@ def main() -> None:
         print(f"Error: {e}")
         exit()
     else:
+        print("Mit Server verbunden")
         bytes = s.recv(4096) # receive the response
         json_data = bytes.decode()
         data = json.loads(json_data)
@@ -23,33 +24,35 @@ def main() -> None:
         prevNeighbor = data["neighbor1"]
         nextNeighbor = data["neighbor2"]
         list_numbers = data["list_numbers"]
+        print(f"Nachricht erhalten. Berechne für {list_numbers}")
         threads = []
 
         # Variable Anzahl an Threads
         anzahl_threads = data["amount"]
         # Mein Port, für die Threads dann + i
-        port = 7777
+        port = 7778
         # Anzahl Threads starten
         for i in range(anzahl_threads):
             # Using `args` to pass positional arguments and `kwargs` for keyword arguments
             if i == 1 and anzahl_threads == 1:
-                t = threading.Thread(target=startTask, args=(prevNeighbor, nextNeighbor, list_numbers[i], port,))
+                t = threading.Thread(target=startTask, args=(prevNeighbor, nextNeighbor, list_numbers[i], port), daemon=True)
             elif i == 1:
                 localNextNeighbor = "127.0.0.1", port + 1
-                t = threading.Thread(target=startTask, args=(prevNeighbor, localNextNeighbor, list_numbers[i], port,))
+                t = threading.Thread(target=startTask, args=(prevNeighbor, localNextNeighbor, list_numbers[i], port), daemon=True)
             elif i == anzahl_threads:
                 localPrevNeighbor = "127.0.0.1", port - 1
-                t = threading.Thread(target=startTask, args=(localPrevNeighbor, nextNeighbor, list_numbers[i], port,))
+                t = threading.Thread(target=startTask, args=(localPrevNeighbor, nextNeighbor, list_numbers[i], port), daemon=True)
             else:
                 localNextNeighbor = "127.0.0.1", port + 1
                 localPrevNeighbor = "127.0.0.1", port - 1
-                t = threading.Thread(target=startTask, args=(localPrevNeighbor, localNextNeighbor, list_numbers[i], port,))
+                t = threading.Thread(target=startTask, args=(localPrevNeighbor, localNextNeighbor, list_numbers[i], port), daemon=True)
             threads.append(t)
             port += 1
 
         # Start each thread
         for t in threads:
             t.start()
+        print("Alle Threads gestartet")
 
         # Wait for all threads to finish
         for t in threads:
@@ -81,14 +84,19 @@ async def listenToServer(reader_server):
                 break
             SERVER_VALUE = int(data.decode().strip())
 
-async def listenToPrevNeighbor():
+async def listenToPrevNeighbor(reader):
     # Auf Nachrichten vom vorherigen Nachbarn warten
     while True:
-            data = await reader_server.readline()
+            data = await reader.readline()
             if not data:
                 print("Verbindung vom Server getrennt")
                 break
             SERVER_VALUE = int(data.decode().strip())
+
+async def ggT(y, M):
+    if y < M:
+        M = 
+
 
 async def async_main(prevNeighbor, nextNeighbor, number, port):
     M = number
@@ -103,9 +111,9 @@ async def async_main(prevNeighbor, nextNeighbor, number, port):
     connectionToNextNeighbor = asyncio.create_task(connectToNextNeighbor(HOST_NEXT_NEIGHBOR, PORT_NEXT_NEIGHBOR))
 
     task_listenToServer = asyncio.create_task(listenToServer(task_listenToServer))
-    task_listenToPrevNeighbor = asyncio.create_task(listenToPrevNeighbor)
-    task_listenToNext_Neigbor = asyncio.create_task(listenToNext_Neigbor)
-    task_ggT = asyncio.create_task(ggT)
+    task_listenToPrevNeighbor = asyncio.create_task(listenToPrevNeighbor(reader=asyncio.StreamReader))
+    task_listenToNext_Neigbor = asyncio.create_task(listenToNextNeigbor)
+    task_ggT = asyncio.create_task(ggT(y, M))
 
 async def handle_neighbor():
     return
