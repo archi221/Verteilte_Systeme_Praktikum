@@ -23,15 +23,40 @@ def main() -> None:
         prevNeighbor = data["neighbor1"]
         nextNeighbor = data["neighbor2"]
         list_numbers = data["list_numbers"]
+        threads = []
 
         # Variable Anzahl an Threads
         anzahl_threads = data["amount"]
         # Mein Port, für die Threads dann + i
         port = 7777
         # Anzahl Threads starten
-        with concurrent.futures.ThreadPoolExecutor(max_workers=anzahl_threads) as executor:  # Einzelne Threads starten, keinen Pool
-            for i in range(anzahl_threads):
-                executor.submit(asyncio.run(async_main(prevNeighbor, nextNeighbor, list_numbers[i]), port+i), i)
+        for i in range(anzahl_threads):
+            # Using `args` to pass positional arguments and `kwargs` for keyword arguments
+            if i == 1 and anzahl_threads == 1:
+                t = threading.Thread(target=startTask, args=(prevNeighbor, nextNeighbor, list_numbers[i], port,))
+            elif i == 1:
+                localNextNeighbor = "127.0.0.1", port + 1
+                t = threading.Thread(target=startTask, args=(prevNeighbor, localNextNeighbor, list_numbers[i], port,))
+            elif i == anzahl_threads:
+                localPrevNeighbor = "127.0.0.1", port - 1
+                t = threading.Thread(target=startTask, args=(localPrevNeighbor, nextNeighbor, list_numbers[i], port,))
+            else:
+                localNextNeighbor = "127.0.0.1", port + 1
+                localPrevNeighbor = "127.0.0.1", port - 1
+                t = threading.Thread(target=startTask, args=(localPrevNeighbor, localNextNeighbor, list_numbers[i], port,))
+            threads.append(t)
+            port += 1
+
+        # Start each thread
+        for t in threads:
+            t.start()
+
+        # Wait for all threads to finish
+        for t in threads:
+            t.join()
+
+def startTask(prevNeighbor, nextNeighbor, number, port):
+    asyncio.run(async_main(prevNeighbor, nextNeighbor, number, port))
 
 async def start_server(host, port):
     server = await asyncio.start_server(handle_neighbor, host, port)
@@ -85,3 +110,4 @@ async def async_main(prevNeighbor, nextNeighbor, number, port):
 async def handle_neighbor():
     return
 
+main()
