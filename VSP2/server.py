@@ -1,5 +1,9 @@
 from socket import *
 import json
+import signal
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 while True:
     try:
@@ -34,8 +38,8 @@ while(True):
             number_int_list.append(int(number))
         except ValueError:
             print(f"Value Error akured on :{number}")
-    
-    if len(number_int_list) < number_clients:
+    start_port = 3000
+    if len(number_int_list) <= number_clients:
         
         clients_needet = clients[:len(number_int_list) - 1]
         for i in range(len(number_int_list)):
@@ -44,13 +48,22 @@ while(True):
 
             _, adress_neigbor1 = clients[i - 1]
             _, adress_neigbor2 = clients[(i + 1) % len(clients)]
+            adress_neigbor1 = (adress_neigbor1[0], start_port + (i - 1) * 10)
+            adress_neigbor2 = (adress_neigbor2[0], start_port + (i + 1) * 10)
+
+            if i == 0:
+                adress_neigbor1 = (adress_neigbor1[0], start_port + (len(number_int_list) - 1) * 10)
+            if i == len(number_int_list) - 1:
+                adress_neigbor2 = (adress_neigbor2[0], start_port)
 
             command = {
                         "amount": 1,
                         "neighbor1": adress_neigbor1, 
                         "neighbor2": adress_neigbor2,
-                        "list_numbers": numbers_client
+                        "list_numbers": numbers_client,
+                        "port": (start_port + i * 10)
                     }
+            
             json_data = json.dumps(command)
             bytes_data = json_data.encode()
             conn, _ = clients[i]
