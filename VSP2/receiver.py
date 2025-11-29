@@ -90,7 +90,7 @@ async def accept_clients(socket, taskQue):
     while connection_count < 2:
         client_socket, address = await asyncio.get_running_loop().sock_accept(socket)
         connection_count += 1
-        print(f"✅ Verbindung {connection_count}/2 von {address}")
+        print(f"Verbindung {connection_count}/2 von {address}")
         asyncio.create_task(handle_client(client_socket, taskQue))
 
 
