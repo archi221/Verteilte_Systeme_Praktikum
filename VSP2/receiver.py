@@ -16,7 +16,7 @@ def main() -> None:
         print(f"Error: {e}")
         exit()
 
-    bytes = s.recv(4096) # receive the response
+    bytes = s.recv(4096) 
     json_data = bytes.decode()
     data = json.loads(json_data)
     prevNeighbor = data["neighbor1"]
@@ -82,7 +82,8 @@ async def async_main(prevNeighbor, nextNeighbor, number, port):
     
     worker = asyncio.create_task(worker_and_sender(prevNeighborWriter, nextNeighborWriter, taskQue, number))
 
-    await worker
+    val = await worker
+    await server
     server_socket.close()
 
 async def accept_clients(socket, taskQue):
@@ -105,6 +106,7 @@ async def handle_client(client_socket, taskQue):
         await taskQue.put(int(data.decode()))
 
 async def worker_and_sender(prevNeighborWriter, nextNeighborWriter, taskQue, M):
+    print(f"Worker mit M: {M} gestartet")
     message = str(M).encode()
     prevNeighborWriter.write(message)
     await prevNeighborWriter.drain()
@@ -120,7 +122,7 @@ async def worker_and_sender(prevNeighborWriter, nextNeighborWriter, taskQue, M):
             await prevNeighborWriter.drain()
             nextNeighborWriter.write(message)
             await nextNeighborWriter.drain()
-            print(f"📨 M aktualiesiert: {M}")
+            print(f"M aktualiesiert: {M}")
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)

@@ -52,7 +52,8 @@ while(True):
             adress_neigbor2 = (adress_neigbor2[0], start_port + (i + 1) * 10)
 
             if i == 0:
-                adress_neigbor1 = (adress_neigbor1[0], start_port + (len(number_int_list) - 1) * 10)
+                adress_neigbor1 = (adress_neigbor1[0]
+                ,start_port + (len(number_int_list) - 1) * 10)
             if i == len(number_int_list) - 1:
                 adress_neigbor2 = (adress_neigbor2[0], start_port)
 
