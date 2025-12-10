@@ -85,6 +85,6 @@ value = "value"
 # Du hast die schon gebaut, also hier nur die Nutzung:
 # c.write(key, value)
 # c.read(key)
-print(f"Schicke an {key} den Wert: {value}")
-s.write(key, value)
-s.read(key)
+# print(f"Schicke an {key} den Wert: {value}")
+# s.write(key, value)
+# s.read(key)
