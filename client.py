@@ -24,6 +24,10 @@ class server_data(Datastore):
         else:
             self.s = s
             bytes = self.s.recv(1024) # receive the response
+            if not bytes:
+                print("Server hat die Verbindung abgelehnt.")
+                self.s.close()
+                return
             json_data = bytes.decode()
             data = json.loads(json_data)
             print(data)

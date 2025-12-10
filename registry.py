@@ -1,75 +1,36 @@
-from socket import *
+from socket import * # type: ignore
 import json
-class Server:
-    def run(self):
-        s = socket(AF_INET, SOCK_STREAM)
-        s.bind(("127.0.0.1", 7777))
-        s.listen(1)
-        (conn, addr) = s.accept() # returns new socket and addr. client
+import threading
 
-        welcomeMsg = "Hallo du Nudel"
-        json_data = json.dumps(welcomeMsg)
-        bytes_data = json_data.encode()
-        conn.send(bytes_data)
+def register_client():
+    while True:
+        conn, addr = s.accept()  # Jedes accept() nimmt einen neuen Client an
+        if len(clients) < number_clients:
+            clients.append((conn, addr))
+            print(f"Client verbunden: {addr}")
+        else:
+            conn.close()
+        if not clients:
+            print("Keine Clients mehr verbunden")
+            break
 
-        while True: # forever
-            bytes = conn.recv(1024) # receive data from client
+clients = []  # Liste zum Speichern aller Client-Verbindungen
+number_clients = int(input("Wieviele Clients sollen zugelassen werden: "))
+s = socket(AF_INET, SOCK_STREAM)
+s.bind(("127.0.0.1", 7777))
+s.listen(number_clients)
 
-            if not bytes: continue
-            data = bytes.decode()
-            data_unmarsh = json.loads(data)
+registerThread = threading.Thread(target=register_client)
+registerThread.start()
 
-            if data_unmarsh["method"] == "write":
-                try:
-                    write(data_unmarsh["v1"], data_unmarsh["v2"])
-                except Exception as e:
-                    answer = {
-                        "ok": 0,
-                        "return": f"Error: {e}"
-                    }
-                else:
-                        read_answer = 0
 
-                        answer = {
-                        "ok": 1,
-                        "return": 0
-                    }
-                
-            elif data_unmarsh["method"] == "read":
-                try:
-                    read_answer = read(data_unmarsh["v1"])
-                except IndexError:
-                    answer = {
-                        "ok": 0,
-                        "return": "NoSuchElementException Index wurde nicht gefunden"
-                    }
-                except Exception as e:
-                    answer = {
-                        "ok": 0,
-                        "return": f"Error: {e}"
-                    }
-                else:
-                    answer = {
-                    "ok": 1,
-                    "return": read_answer
-                }
-            else : break
-            print(data_unmarsh)
-            print(daten)
-            
+welcomeMsg = """\nWillkommen beim Registry Service!\nMit folgenden Befehlen kannst du mit mir interagieren:\n
+register = Anmelden\n
+unregister = Abmelden\n
+list = Keine Ahnung\n"""
 
-            json_data = json.dumps(answer)
-            bytes_data = json_data.encode()
-            conn.send(bytes_data)
+registerThread.join()
 
-        conn.close() # close the connection
-
-daten = ["cat", "dog", "papagei", "pigeon", "hamster", "lion", "dino", "koala"]
-def write(i: int, d:str):
-    daten[i] = d
-
-def read(i: int): 
-    return daten[i]
-
-s = Server
-s.run(s) # type: ignore
+# json_data = json.dumps(welcomeMsg)
+# bytes_data = json_data.encode()
+# conn.send(bytes_data)
