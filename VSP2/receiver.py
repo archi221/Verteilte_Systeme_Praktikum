@@ -9,7 +9,7 @@ PREV_VALUE = 0
 SERVER_VALUE = 0
 
 serverIp = "192.168.43.50"
-clientIP = "192.168.43.50"
+clientIP = "192.168.43.213"
 
 def main() -> None:
     s = socket(AF_INET, SOCK_STREAM)
