@@ -6,6 +6,12 @@ class Server:
         s.bind(("127.0.0.1", 7777))
         s.listen(1)
         (conn, addr) = s.accept() # returns new socket and addr. client
+
+        welcomeMsg = "Hallo du Nudel"
+        json_data = json.dumps(welcomeMsg)
+        bytes_data = json_data.encode()
+        conn.send(bytes_data)
+
         while True: # forever
             bytes = conn.recv(1024) # receive data from client
 
