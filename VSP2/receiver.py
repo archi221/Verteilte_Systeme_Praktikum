@@ -8,7 +8,8 @@ import time
 PREV_VALUE = 0
 SERVER_VALUE = 0
 
-serverIp = "141.22.81.229"
+serverIp = "192.168.43.50"
+clientIP = "192.168.43.50"
 
 def main() -> None:
     s = socket(AF_INET, SOCK_STREAM)
@@ -37,14 +38,14 @@ def main() -> None:
             if (i == 0) and (anzahl_threads == 1):
                 t = threading.Thread(target=startTask, args=(prevNeighbor, nextNeighbor, list_numbers[i], port,))
             elif i == 0:
-                localNextNeighbor = ("127.0.0.1", port + 1)
+                localNextNeighbor = (clientIP, port + 1)
                 t = threading.Thread(target=startTask, args=(prevNeighbor, localNextNeighbor, list_numbers[i], port,))
             elif i == (anzahl_threads - 1):
-                localPrevNeighbor = ("127.0.0.1", port - 1)
+                localPrevNeighbor = (clientIP, port - 1)
                 t = threading.Thread(target=startTask, args=(localPrevNeighbor, nextNeighbor, list_numbers[i], port,))
             else:
-                localNextNeighbor = ("127.0.0.1", port + 1)
-                localPrevNeighbor = ("127.0.0.1", port - 1)
+                localNextNeighbor = (clientIP, port + 1)
+                localPrevNeighbor = (clientIP, port - 1)
                 t = threading.Thread(target=startTask, args=(localPrevNeighbor, localNextNeighbor, list_numbers[i], port,))
             threads.append(t)
             threadPorts.append(port)
@@ -58,7 +59,7 @@ def main() -> None:
         for port in threadPorts:
             so = socket(AF_INET, SOCK_STREAM)
             try:
-                so.connect(("127.0.0.1", port))
+                so.connect((clientIP, port))
                 threadSockets.append(so)
             except Exception as e:
                 print(f"Error: {e}")
@@ -76,7 +77,7 @@ def main() -> None:
         for port in threadPorts:
             so = socket(AF_INET, SOCK_STREAM)
             try:
-                so.connect(("127.0.0.1", port))
+                so.connect((clientIP, port))
                 dataSet.add(int(so.recv(4096).decode()))
                 so.close()
             except Exception as e:
@@ -100,11 +101,11 @@ async def async_main(prevNeighbor, nextNeighbor, number, port):
 
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    server_socket.bind(('127.0.0.1', port))
+    server_socket.bind((clientIP, port))
     server_socket.listen(3)
     server_socket.setblocking(False)
 
-    print(f"Starte Server mit IP: {'127.0.0.1'} über Port {port}")
+    print(f"Starte Server mit IP: {clientIP} über Port {port}")
     server = asyncio.create_task(accept_clients(server_socket, taskQue))
     await asyncio.sleep(1)
 

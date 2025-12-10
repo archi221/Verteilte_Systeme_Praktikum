@@ -6,6 +6,8 @@ import time
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
+serverIp = "192.168.43.50"
+
 while True:
     try:
         number_clients = int(input("Anzahl Computer zum berechnen: "))
@@ -18,7 +20,7 @@ while True:
 
 s = socket(AF_INET, SOCK_STREAM)
 s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-s.bind(("127.0.0.1", 7777))
+s.bind((serverIp, 7777))
 s.listen(number_clients * 2)
 
 clients = []  # Liste zum Speichern aller Client-Verbindungen
