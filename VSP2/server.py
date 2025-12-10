@@ -115,6 +115,7 @@ while(True):
         command = "Send result"
         conn, _ = client
         bytes_data = command.encode()
+        print(f"sende Send result an {conn}")
         conn.send(bytes_data)
 
         while True:
