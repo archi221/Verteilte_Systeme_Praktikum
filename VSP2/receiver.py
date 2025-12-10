@@ -8,11 +8,13 @@ import time
 PREV_VALUE = 0
 SERVER_VALUE = 0
 
+serverIp = "141.22.81.229"
+
 def main() -> None:
     s = socket(AF_INET, SOCK_STREAM)
     try:
         # Zum Server (Verteiler) verbinden
-        s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
+        s.connect((serverIp, 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
     except Exception as e:
         print(f"Error: {e}")
         exit()
