@@ -3,7 +3,7 @@ import json
 class Server:
     def run(self):
         s = socket(AF_INET, SOCK_STREAM)
-        s.bind(("172.18.27.132", 7777))
+        s.bind(("127.0.0.1", 7777))
         s.listen(1)
         (conn, addr) = s.accept() # returns new socket and addr. client
         while True: # forever
@@ -66,4 +66,4 @@ def read(i: int):
     return daten[i]
 
 s = Server
-s.run(s)
+s.run(s) # type: ignore
