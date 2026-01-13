@@ -93,7 +93,6 @@ def handle_client(conn, mein_name):
 
                         antwort = {
                             "befehl": "nachbarn_antwort",
-                            "alleiniger_Client": n == 1,
                             "vorgänger": {"name": name_v, "ip": v_info["ip"], "port": v_info["port"]},
                             "nachfolger": {"name": name_n, "ip": n_info["ip"], "port": n_info["port"]}
                         }
@@ -149,7 +148,7 @@ def accept_new_client(conn):
                         clients[client_name] = client_data
                         clients_token_ring.append(client_name)
 
-                    conn.sendall((json.dumps({"befehl": "Ok"}) + "\n").encode("utf-8"))
+                    conn.sendall((json.dumps({"befehl": "Ok", "alleiniger_Client": len(clients_token_ring) == 1,}) + "\n").encode("utf-8"))
                     print(f"client: {client_name} des types: {client_type} akzeptiert")
                     return client_type, client_name
 
