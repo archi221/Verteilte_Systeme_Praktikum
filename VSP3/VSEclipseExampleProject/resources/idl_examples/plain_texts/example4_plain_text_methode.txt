@@ -1,5 +1,0 @@
-
-    public %s %s(%s) {
-        System.out.println("currently empty methode body!");
-        %s
-    }

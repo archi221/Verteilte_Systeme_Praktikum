@@ -1,7 +1,0 @@
-package %s;
-
-public class %s {
-
-   %s
-
-}
