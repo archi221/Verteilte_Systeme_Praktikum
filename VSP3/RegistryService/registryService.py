@@ -2,6 +2,7 @@ from socket import *
 import json
 import signal
 import threading
+import time
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
@@ -17,7 +18,7 @@ server_socket.listen(MAX_CLIENTS)
 
 data_lock = threading.Lock()
 client_id_counter = 0
-clients = {} 
+clients = {}
 robot_nodes = {}
 clients_token_ring = []
 
@@ -33,19 +34,22 @@ def client_daemon(conn):
         handle_client(conn, client_name)
 
 def handle_node(conn, client_name):
-    conn.settimeout(1.0)
+    print("startet handle node")
+    conn.settimeout(3.0)
     try:
         while True:
             bytes_received = conn.recv(1024)
             if not bytes_received:
                 break
-            
+
             data = json.loads(bytes_received.decode())
             if data.get("befehl") != "Im Alive":
                 print(f"Unerwarteter Befehl: {data.get('befehl')}")
-                
-    except (timeout, Exception):
-        pass
+            
+    except TimeoutError:
+        print(f"Timeout bei Kommunikation mit {client_name} - Keine Daten innerhalb von 3 Sekunden")
+    except Exception as e:
+        print(f"error {client_name}: {e}")
     finally:
         with data_lock:
             robot_nodes.pop(client_name, None)
@@ -57,7 +61,7 @@ def handle_client(conn, mein_name):
             received_bytes = conn.recv(1024)
             if not received_bytes:
                 break
-            
+
             data = json.loads(received_bytes.decode())
             befehl = data.get("befehl")
 
@@ -70,7 +74,10 @@ def handle_client(conn, mein_name):
                         ergebnis = [[k, v['id'], v['ip'], v['port']] for k, v in clients.items()]
                     else:
                         ergebnis = []
-                conn.send(json.dumps({"befehl": "liste_antwort", "daten": ergebnis}).encode('utf-8'))
+                conn.sendall((json.dumps({
+                    "befehl": "liste_antwort",
+                    "daten": ergebnis
+                }) + "\n").encode("utf-8"))
 
             elif befehl == "nachbarn":
                 with data_lock:
@@ -79,7 +86,7 @@ def handle_client(conn, mein_name):
                         idx = clients_token_ring.index(mein_name)
                         name_v = clients_token_ring[(idx - 1) % n]
                         name_n = clients_token_ring[(idx + 1) % n]
-                        
+
                         v_info = clients[name_v]
                         n_info = clients[name_n]
 
@@ -91,7 +98,8 @@ def handle_client(conn, mein_name):
                         }
                     else:
                         antwort = {"befehl": "error", "code": "nicht_registriert"}
-                conn.send(json.dumps(antwort).encode('utf-8'))
+
+                conn.sendall((json.dumps(antwort) + "\n").encode("utf-8"))
 
             elif befehl == "dead":
                 with data_lock:
@@ -99,7 +107,8 @@ def handle_client(conn, mein_name):
                         clients_token_ring.remove(mein_name)
                     clients.pop(mein_name, None)
                     robot_nodes.pop(mein_name, None)
-                conn.send(json.dumps({"befehl": "Ok"}).encode('utf-8'))
+
+                conn.sendall((json.dumps({"befehl": "Ok"}) + "\n").encode("utf-8"))
                 return
 
     except Exception:
@@ -113,14 +122,12 @@ def handle_client(conn, mein_name):
 
 def accept_new_client(conn):
     global client_id_counter
-    client_type = ""
-    client_name = ""
     try:
         while True:
             received_bytes = conn.recv(1024)
             if not received_bytes:
                 return None, None
-                
+
             data = json.loads(received_bytes.decode())
             client_name = data.get("clientName")
             client_type = data.get("type")
@@ -130,25 +137,27 @@ def accept_new_client(conn):
             with data_lock:
                 if client_name in robot_nodes or client_name in clients:
                     error_msg = {"befehl": "error", "code": "name schon vorhanden"}
-                    conn.send(json.dumps(error_msg).encode('utf-8'))
+                    conn.sendall((json.dumps(error_msg) + "\n").encode("utf-8"))
                 else:
                     client_id_counter += 1
                     client_data = {"id": client_id_counter, "ip": ip, "port": port}
-                    
+
                     if client_type == "node":
                         robot_nodes[client_name] = client_data
                     elif client_type == "client":
                         clients[client_name] = client_data
                         clients_token_ring.append(client_name)
-                    
-                    conn.send(json.dumps({"befehl": "Ok"}).encode('utf-8'))
+
+                    conn.sendall((json.dumps({"befehl": "Ok"}) + "\n").encode("utf-8"))
+                    print(f"client: {client_name} des types: {client_type} akzeptiert")
                     return client_type, client_name
 
     except Exception:
+        print("error in accept_new_client")
         return None, None
 
 while True:
-    conn, addr = server_socket.accept() 
+    conn, addr = server_socket.accept()
     t = threading.Thread(target=client_daemon, args=(conn,))
     t.daemon = True
     t.start()

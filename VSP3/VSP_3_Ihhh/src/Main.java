@@ -75,7 +75,7 @@ public class Main {
 
                 System.out.println("Sende Registrierung (Versuch " + (counter + 1) + "): " + jsonRegistration);
                 out.println(jsonRegistration);
-
+                out.flush();
                 answer = in.readLine();
 
                 if (!"{\"befehl\": \"Ok\"}".equals(answer)) {
@@ -91,19 +91,16 @@ public class Main {
             keepAlive.start(out);
 
             Thread armThread = new Thread(new RobotArmManager(in, out, true, config.ip, config.port));
-            armThread.setDaemon(true);
             armThread.start();
 
             System.out.println("Verbunden. Drücke ENTER zum Abmelden...");
-            Scanner scanner = new Scanner(System.in);
-            scanner.nextLine();
+            Scanner sc = new Scanner(System.in);
+            sc.nextLine(); // Das Programm bleibt hier stehen, bis du ENTER drückst
 
-            // 3. Abmeldung (noch innerhalb des try-Blocks, solange out offen ist)
+        // Erst wenn der User ENTER drückt, wird der Rest ausgeführt:
             keepAlive.stop();
             armThread.interrupt();
-            String deadMessage = "{\"befehl\": \"dead\"}";
-            System.out.println("Sende Abmeldung: " + deadMessage);
-            out.println(deadMessage);
+            out.println("{\"befehl\": \"dead\"}");
             out.flush();
 
         } catch (IOException e) {
