@@ -9,15 +9,20 @@ def register(client_name) -> tuple[bool, bool]:
     liste = {"clientName": client_name, "type": "client", "ip": OWN_IP, "port": OWN_PORT}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
-    s.send(bytes_data) # send same data
 
-    bytes = s.recv(1024) # receive the response
+    with server_lock:
+        s.send(bytes_data) # send same data
+
+        bytes = s.recv(1024) # receive the response
+
     json_data = bytes.decode()
     data = json.loads(json_data)
     befehl = data.get("befehl")
     if befehl == "Ok":
         alone = data.get("alleiniger_Client")
         token = alone
+        if token:
+            token_erhalten_event.set()
         print("Erfolgreich registriert!")
         if token:
             print("Du bist alleiniger Client und hast den TOKEN.")
@@ -33,9 +38,12 @@ def unregister() -> bool:
     liste = {"befehl": "dead"}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
-    s.send(bytes_data) # send same data
 
-    bytes = s.recv(1024) # receive the response
+    with server_lock:
+        s.send(bytes_data) # send same data
+
+        bytes = s.recv(1024) # receive the response
+
     json_data = bytes.decode()
     data = json.loads(json_data)
     answer = data.get("befehl")
@@ -50,9 +58,12 @@ def neighbours() -> Any:
     liste = {"befehl": "nachbarn"}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
-    s.send(bytes_data) # send same data
 
-    bytes = s.recv(1024) # receive the response
+    with server_lock:
+        s.send(bytes_data) # send same data
+
+        bytes = s.recv(1024) # receive the response
+
     json_data = bytes.decode()
     data = json.loads(json_data)
     if data.get("befehl") == "nachbarn_antwort":
@@ -69,9 +80,12 @@ def liste_clients() -> Any:
     liste = {"befehl": "liste", "type": "client"}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
-    s.send(bytes_data) # send same data
 
-    bytes = s.recv(1024) # receive the response
+    with server_lock:
+        s.send(bytes_data) # send same data
+
+        bytes = s.recv(1024) # receive the response
+
     json_data = bytes.decode()
     data = json.loads(json_data)
     if data.get("befehl") == "liste_antwort":
@@ -84,9 +98,12 @@ def liste_nodes() -> Any:
     liste = {"befehl": "liste", "type": "node"}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
-    s.send(bytes_data) # send same data
 
-    bytes = s.recv(1024) # receive the response
+    with server_lock:
+        s.send(bytes_data) # send same data
+
+        bytes = s.recv(1024) # receive the response
+
     json_data = bytes.decode()
     data = json.loads(json_data)
     if data.get("befehl") == "liste_antwort":
@@ -118,6 +135,7 @@ def start_token_listener():
                     data = json.loads(msg.decode("utf-8").strip())
                     if data.get("befehl") == "token":
                         token = True
+                        token_erhalten_event.set()
                         print("\n TOKEN erhalten, du darfst arbeiten.")
             except Exception:
                 pass
@@ -166,6 +184,18 @@ def sende_token_zu_nachfolger() -> bool:
         print(f"Token senden fehlgeschlagen: {e}")
         return False
 
+def send_move(node_ip: str, node_port: int, achse: str, wert: int):
+    payload = {"befehl": "move", "achse": achse, "wert": wert}
+    try:
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.settimeout(3.0)
+        sock.connect((node_ip, node_port))
+        sock.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+        sock.close()
+        print(f"move gesendet an {node_ip}:{node_port} ({achse}={wert})")
+    except Exception as e:
+        print(f"move fehlgeschlagen ({node_ip}:{node_port}): {e}")
+
 
 #---------------------------MAIN----------------------------
 OWN_IP = "127.0.0.1"
@@ -180,8 +210,24 @@ connected = False
 registered = False
 token = False
 token_stop = threading.Event()
+server_lock = threading.Lock()
+token_erhalten_event = threading.Event()
+nodes_cache = []
 
 while True:
+
+    if token_erhalten_event.is_set():
+        token_erhalten_event.clear()
+        nodes = liste_nodes()
+        nodes_cache = nodes or []
+        print("\n Verfügbare Nodes:")
+        if not nodes_cache:
+            print("  (keine)")
+        else:
+            for name, cid, ip, port in nodes_cache:
+                print(f"  - {name} (id={cid}) {ip}:{port}")
+
+
     prompt = "NODE> " if token else ""
     user_input = input(prompt)
 
@@ -193,7 +239,7 @@ while True:
         
         if not connected:
             try:
-                print("Verbindung zum Server wird aufgebaut!")
+                print("\nVerbindung zum Server wird aufgebaut!")
                 s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
                 connected = True
             except Exception as e:
@@ -251,7 +297,7 @@ while True:
                     if answer is None:
                         continue
                 except Exception as e:
-                    print(f"Liste_Clinets fehlgeschlagen: {e}")
+                    print(f"Liste_Clients fehlgeschlagen: {e}")
                     continue
 
                 for name, cid, ip, port in answer:
@@ -264,7 +310,7 @@ while True:
                     if answer is None:
                         continue
                 except Exception as e:
-                    print(f"Liste_Clinets fehlgeschlagen: {e}")
+                    print(f"Liste_Nodes fehlgeschlagen: {e}")
                     continue
 
                 for name, cid, ip, port in answer:
@@ -278,7 +324,63 @@ while True:
                 sende_token_zu_nachfolger()
                 continue
 
+            case "move":
+                print("Syntax:")
+                print("  move all <achse> <wert>")
+                print("  move NodeA,NodeB <achse> <wert>")
+                print("Achsen: leftRight | upDown | backForth | openClose")
+                continue
+
+            case cmd if cmd.startswith("move "):
+                if not token:
+                    print("Kein Token. Node-Steuerung nicht erlaubt.")
+                    continue
+
+                parts = cmd.split()
+                if len(parts) != 4:
+                    print("Syntax:")
+                    print("  move all <achse> <wert>")
+                    print("  move NodeA,NodeB <achse> <wert>")
+                    continue
+
+                targets_raw = parts[1]
+                achse = parts[2]
+                try:
+                    wert = int(parts[3])
+                except ValueError:
+                    print("wert muss eine Zahl sein (0-100)")
+                    continue
+
+                if achse not in {"leftRight", "upDown", "backForth", "openClose"}:
+                    print("Ungültige achse")
+                    continue
+                if not (0 <= wert <= 100):
+                    print("wert muss 0-100 sein")
+                    continue
+
+                nodes = liste_nodes()
+                if not nodes:
+                    print("Keine Nodes bekannt.")
+                    continue
+
+                # Ziel-Nodes bestimmen
+                if targets_raw == "all":
+                    targets = nodes
+                else:
+                    target_names = [n.strip() for n in targets_raw.split(",")]
+                    targets = [n for n in nodes if n[0] in target_names]
+
+                    if not targets:
+                        print("Keine der angegebenen Nodes gefunden.")
+                        continue
+
+                for name, cid, ip, port in targets:
+                    print(f"→ {name}")
+                    send_move(ip, port, achse, wert)
+
+                continue
+            
             case _:
-                print("Commands: liste client | liste node | nachbarn | dead")
+                print("Commands: liste client | liste node | nachbarn | move | dead | work done")
     else:
         print("Bitte registrieren sie sich vorher mit: register!")
