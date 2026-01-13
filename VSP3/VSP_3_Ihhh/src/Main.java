@@ -100,6 +100,7 @@ public class Main {
         // Erst wenn der User ENTER drückt, wird der Rest ausgeführt:
             keepAlive.stop();
             armThread.interrupt();
+            socket.close();
             out.println("{\"befehl\": \"dead\"}");
             out.flush();
 

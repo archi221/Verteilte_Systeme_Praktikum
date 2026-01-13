@@ -32,6 +32,7 @@ def client_daemon(conn):
         handle_node(conn, client_name)
     elif client_type == "client":
         handle_client(conn, client_name)
+    conn.close()
 
 def handle_node(conn, client_name):
     print("startet handle node")
