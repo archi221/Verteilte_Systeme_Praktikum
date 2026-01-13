@@ -75,7 +75,7 @@ s = server_data()
 # Du hast die schon gebaut, also hier nur die Nutzung:
 # c.write(key, value)
 # c.read(key)
-# s.write(key, value)
+s.write(5, "value")
 # s.read(key)
 
 

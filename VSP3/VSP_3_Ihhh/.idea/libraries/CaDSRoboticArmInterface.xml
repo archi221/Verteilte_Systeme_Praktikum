@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="CaDSRoboticArmInterface">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/CaDSRoboticArmInterface.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
