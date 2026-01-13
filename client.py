@@ -3,8 +3,9 @@ import json
 from abc import ABC, abstractmethod
 from typing import Protocol, Any, Dict
 import time
+import threading
 
-def register(client_name) -> bool:
+def register(client_name) -> tuple[bool, bool]:
     liste = {"clientName": client_name, "type": "client", "ip": OWN_IP, "port": OWN_PORT}
     marsh_data = json.dumps(liste)
     bytes_data = marsh_data.encode()
@@ -15,12 +16,18 @@ def register(client_name) -> bool:
     data = json.loads(json_data)
     befehl = data.get("befehl")
     if befehl == "Ok":
+        alone = data.get("alleiniger_Client")
+        token = alone
         print("Erfolgreich registriert!")
-        return True
+        if token:
+            print("Du bist alleiniger Client und hast den TOKEN.")
+        else:
+            print("Registriert. Warte auf TOKEN von Vorgänger.")
+        return True, token
     else:
         code = data.get("code")
         print(f"{befehl}: fehler bei der Registrierung! {code}")
-        return False
+        return False, False
 
 def unregister() -> bool:
     liste = {"befehl": "dead"}
@@ -87,6 +94,78 @@ def liste_nodes() -> Any:
     else:
         print("Fehler bei Antwort von Befehl: liste, type: node")
         return None
+    
+def start_token_listener():
+    def run():
+        global token
+        sendSocket = socket(AF_INET, SOCK_STREAM)
+        sendSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        sendSocket.bind((OWN_IP, OWN_PORT))
+        sendSocket.listen(5)
+        sendSocket.settimeout(1.0)
+
+        while not token_stop.is_set():
+            try:
+                conn, _ = sendSocket.accept()
+            except timeout:
+                continue
+            except Exception:
+                break
+
+            try:
+                msg = conn.recv(1024)
+                if msg:
+                    data = json.loads(msg.decode("utf-8").strip())
+                    if data.get("befehl") == "token":
+                        token = True
+                        print("\n TOKEN erhalten, du darfst arbeiten.")
+            except Exception:
+                pass
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+        try:
+            sendSocket.close()
+        except Exception:
+            pass
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+
+def sende_token_zu_nachfolger() -> bool:
+    global token
+
+    nachbarn = neighbours()
+    if nachbarn is None:
+        print("Kann Token nicht senden: keine Nachbarn")
+        return False
+
+    alone, _, nachfolger = nachbarn
+    if alone:
+        print("Du bist alleiniger Client, TOKEN bleibt bei dir.")
+        return True
+
+    ip = nachfolger.get("ip")
+    port = nachfolger.get("port")
+    name = nachfolger.get("name")
+
+    try:
+        sendSocket = socket(AF_INET, SOCK_STREAM)
+        sendSocket.settimeout(2.0)
+        sendSocket.connect((ip, port))
+        sendSocket.sendall((json.dumps({"befehl": "token"}) + "\n").encode("utf-8"))
+        sendSocket.close()
+
+        token = False
+        print(f"TOKEN gesendet an {name} ({ip}:{port})")
+        return True
+    except Exception as e:
+        print(f"Token senden fehlgeschlagen: {e}")
+        return False
+
 
 #---------------------------MAIN----------------------------
 OWN_IP = "127.0.0.1"
@@ -99,8 +178,13 @@ s = socket(AF_INET, SOCK_STREAM)
 
 connected = False
 registered = False
+token = False
+token_stop = threading.Event()
+
 while True:
-    user_input = input()
+    prompt = "NODE> " if token else ""
+    user_input = input(prompt)
+
 
     if user_input == "register":
         if registered:
@@ -119,11 +203,14 @@ while True:
                 continue
 
         while True:
-            registered = register(client_name)
+            registered, token = register(client_name)
             if registered:
+                start_token_listener()
                 break
             print("\nWählen Sie einen neuen Namen für den Client:")
             client_name = input()
+            
+        continue
 
 
     if registered:
@@ -182,6 +269,13 @@ while True:
 
                 for name, cid, ip, port in answer:
                     print(f"{name} (id={cid}) {ip}:{port}")
+                continue
+            
+            case "work done":
+                if not token:
+                    print("Du hast keinen Token. Warte bis du den Token hast.")
+                    continue
+                sende_token_zu_nachfolger()
                 continue
 
             case _:
