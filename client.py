@@ -4,87 +4,187 @@ from abc import ABC, abstractmethod
 from typing import Protocol, Any, Dict
 import time
 
-class Datastore(ABC):
-    @abstractmethod
-    def read(self, key: int) -> Any:
-        pass
+def register(client_name) -> bool:
+    liste = {"clientName": client_name, "type": "client", "ip": OWN_IP, "port": OWN_PORT}
+    marsh_data = json.dumps(liste)
+    bytes_data = marsh_data.encode()
+    s.send(bytes_data) # send same data
 
-    @abstractmethod
-    def write(self, key: int, value: str) -> None:
-        pass
+    bytes = s.recv(1024) # receive the response
+    json_data = bytes.decode()
+    data = json.loads(json_data)
+    befehl = data.get("befehl")
+    if befehl == "Ok":
+        print("Erfolgreich registriert!")
+        return True
+    else:
+        code = data.get("code")
+        print(f"{befehl}: fehler bei der Registrierung! {code}")
+        return False
 
-class server_data(Datastore):
-    def __init__(self) -> None:
-        s = socket(AF_INET, SOCK_STREAM)
-        try:
-            s.connect(("127.0.0.1", 7777)) # connect t o server (block until accepted) 127.0.0.1 localhost
-        except Exception as e:
-            print(f"Error: {e}")
-            exit()
-        else:
-            self.s = s
-            bytes = self.s.recv(1024) # receive the response
-            if not bytes:
-                print("Server hat die Verbindung abgelehnt.")
-                self.s.close()
-                return
-            json_data = bytes.decode()
-            data = json.loads(json_data)
-            print(data)
+def unregister() -> bool:
+    liste = {"befehl": "dead"}
+    marsh_data = json.dumps(liste)
+    bytes_data = marsh_data.encode()
+    s.send(bytes_data) # send same data
 
+    bytes = s.recv(1024) # receive the response
+    json_data = bytes.decode()
+    data = json.loads(json_data)
+    answer = data.get("befehl")
+    if answer == "Ok":
+        print("Erfolgreich abgemeldet!")
+        return True
+    else:
+        print("Beim Abmelden ist ein Fehler aufgetaucht!")
+        return False
+
+def neighbours() -> Any:
+    liste = {"befehl": "nachbarn"}
+    marsh_data = json.dumps(liste)
+    bytes_data = marsh_data.encode()
+    s.send(bytes_data) # send same data
+
+    bytes = s.recv(1024) # receive the response
+    json_data = bytes.decode()
+    data = json.loads(json_data)
+    if data.get("befehl") == "nachbarn_antwort":
+        return (
+            data.get("alleiniger_Client"),
+            data.get("vorgänger"),
+            data.get("nachfolger"),
+        )
+    else:
+        print("Fehler bei Antwort von Befehl: nachbarn")
+        return None
+
+def liste_clients() -> Any:
+    liste = {"befehl": "liste", "type": "client"}
+    marsh_data = json.dumps(liste)
+    bytes_data = marsh_data.encode()
+    s.send(bytes_data) # send same data
+
+    bytes = s.recv(1024) # receive the response
+    json_data = bytes.decode()
+    data = json.loads(json_data)
+    if data.get("befehl") == "liste_antwort":
+        return data.get("daten")
+    else:
+        print("Fehler bei Antwort von Befehl: liste, type: client")
+        return None
     
-    def read(self, key: int) -> Any:
-        liste = {"method": "read", "v1":key}
-        marsh_data = json.dumps(liste)
-        bytes_data = marsh_data.encode()
-        self.s.send(bytes_data) # send same data
+def liste_nodes() -> Any:
+    liste = {"befehl": "liste", "type": "node"}
+    marsh_data = json.dumps(liste)
+    bytes_data = marsh_data.encode()
+    s.send(bytes_data) # send same data
 
-        bytes = self.s.recv(1024) # receive the response
-        json_data = bytes.decode()
-        data = json.loads(json_data)
-        if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data['return']}")
-        return data["return"]
+    bytes = s.recv(1024) # receive the response
+    json_data = bytes.decode()
+    data = json.loads(json_data)
+    if data.get("befehl") == "liste_antwort":
+        return data.get("daten")
+    else:
+        print("Fehler bei Antwort von Befehl: liste, type: node")
+        return None
 
-      
-    
-    def write(self, key: int, value: str) -> None:
-        liste = {"method": "write", "v1":key, "v2": value}
-        marsh_data = json.dumps(liste)
-        bytes_data = marsh_data.encode()
-        self.s.send(bytes_data) # send same data
+#---------------------------MAIN----------------------------
+OWN_IP = "127.0.0.1"
+OWN_PORT = 5001
 
-        bytes = self.s.recv(1024) # receive the response
-        json_data = bytes.decode()
-        data = json.loads(json_data)
-        if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data['return']}")
-        return
+print("Wie ist der Name des Clients?")
+client_name = input()
+print("Registrieren sie sich nun mit: register")
+s = socket(AF_INET, SOCK_STREAM)
+
+connected = False
+registered = False
+while True:
+    user_input = input()
+
+    if user_input == "register":
+        if registered:
+            print("Bereits registriert")
+            continue
+        
+        if not connected:
+            try:
+                print("Verbindung zum Server wird aufgebaut!")
+                s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
+                connected = True
+            except Exception as e:
+                print(f"Error: {e}")
+                connected = False
+                registered = False
+                continue
+
+        while True:
+            registered = register(client_name)
+            if registered:
+                break
+            print("\nWählen Sie einen neuen Namen für den Client:")
+            client_name = input()
 
 
+    if registered:
+        match user_input:
+            case "dead":
+                try:
+                    ok = unregister()
+                except Exception as e:
+                    print(f"Unregister fehlgeschlagen: {e}")
+                    ok = False
 
-class client_data(Datastore):
-    def __init__(self) -> None:
-        self.daten = ["cat", "dog", "papagei", "pigeon", "hamster", "lion", "dino", "koala"]
-    
-    def read(self, key: int) -> Any:
-        return self.daten[key]
+                # Wenn erfolgreich abgemeldet: Socket schließen, Status zurücksetzen
+                if ok:
+                    registered = False
+                    connected = False
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+                    s = socket(AF_INET, SOCK_STREAM)
 
-    def write(self, key: int, value: str) -> None:
-        self.daten[key] = value
+            case "nachbarn":
+                try:
+                    answer = neighbours()
+                    if answer is None:
+                        continue
+                except Exception as e:
+                    print(f"Neighbours fehlgeschlagen: {e}")
+                    continue
 
-#---------------------------------------------------------------
+                alone, vorgänger, nachfolger = answer
+                print(f"Test: {alone}, {vorgänger}, {nachfolger}")
+                continue
 
-c = client_data()
-s = server_data()
+            case "liste client":
+                try:
+                    answer = liste_clients()
+                    if answer is None:
+                        continue
+                except Exception as e:
+                    print(f"Liste_Clinets fehlgeschlagen: {e}")
+                    continue
 
-key = 5
-value = "value"
+                for name, cid, ip, port in answer:
+                    print(f"{name} (id={cid}) {ip}:{port}")
+                continue
 
-# Annahme: c = ClientDatastore(), s = ServerDatastore()
-# Du hast die schon gebaut, also hier nur die Nutzung:
-# c.write(key, value)
-# c.read(key)
-# print(f"Schicke an {key} den Wert: {value}")
-# s.write(key, value)
-# s.read(key)
+            case "liste node":
+                try:
+                    answer = liste_nodes()
+                    if answer is None:
+                        continue
+                except Exception as e:
+                    print(f"Liste_Clinets fehlgeschlagen: {e}")
+                    continue
+
+                for name, cid, ip, port in answer:
+                    print(f"{name} (id={cid}) {ip}:{port}")
+                continue
+
+            case _:
+                print("Commands: liste client | liste node | nachbarn | dead")
+    else:
+        print("Bitte registrieren sie sich vorher mit: register!")
