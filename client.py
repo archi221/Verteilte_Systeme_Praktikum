@@ -198,6 +198,8 @@ def send_move(node_ip: str, node_port: int, achse: str, wert: int):
 
 
 #---------------------------MAIN----------------------------
+SERVER_IP = "127.0.0.1"
+SERVER_PORT = 7777
 OWN_IP = "127.0.0.1"
 OWN_PORT = 5001
 
@@ -240,7 +242,7 @@ while True:
         if not connected:
             try:
                 print("\nVerbindung zum Server wird aufgebaut!")
-                s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
+                s.connect((SERVER_IP, SERVER_PORT)) # connect to server (block until accepted) 127.0.0.1 localhost
                 connected = True
             except Exception as e:
                 print(f"Error: {e}")
@@ -308,6 +310,7 @@ while True:
                 try:
                     answer = liste_nodes()
                     if answer is None:
+                        print("Keine Nodes vorhanden")
                         continue
                 except Exception as e:
                     print(f"Liste_Nodes fehlgeschlagen: {e}")
