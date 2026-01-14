@@ -6,7 +6,7 @@ public class Main {
     public static void main(String[] args) {
 
         Config config = askForConnectionSettings();
-        String serverAdress = "127.0.0.1";
+        String serverAdress = "192.168.193.98";
         int serverPort = 7777;
 
         connect_to_server(config, serverAdress, serverPort);

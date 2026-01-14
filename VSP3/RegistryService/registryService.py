@@ -7,7 +7,7 @@ import threading
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-SERVER_IP = "127.0.0.1"
+SERVER_IP = "192.168.193.98"
 SERVER_PORT = 7777
 MAX_CLIENTS = 20
 
@@ -58,7 +58,6 @@ def handle_node(conn, client_name):
 
 def handle_client(conn, mein_name):
     try:
-        conn.settimeout(2.0)
         while True:
             received_bytes = conn.recv(1024)
             if not received_bytes:
@@ -106,8 +105,6 @@ def handle_client(conn, mein_name):
                 conn.sendall((json.dumps({"befehl": "Ok"}) + "\n").encode("utf-8"))
                 return
 
-    except TimeoutError:
-        print(f"Timeout bei Kommunikation mit {mein_name} - Keine Daten innerhalb von 2 Sekunden")
     except Exception as e:
         print(f"error von {mein_name}: {e}")
     finally:
