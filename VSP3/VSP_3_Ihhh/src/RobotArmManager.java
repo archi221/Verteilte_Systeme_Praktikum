@@ -14,7 +14,6 @@ public class RobotArmManager implements Runnable {
     private final ICaDSRoboticArm arm;
     private final int serverPort;
     private boolean running = true;
-    // Ein Thread-Pool, der bei Bedarf neue Threads erstellt
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     public RobotArmManager(int serverPort, boolean isSimulation, String robotIP, int robotPort) {
@@ -50,7 +49,6 @@ public class RobotArmManager implements Runnable {
     }
 
     private void handleClient(Socket socket) {
-        // Nutze try-with-resources hier, damit der Socket am Ende sicher geschlossen wird
         try (socket;
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
@@ -72,7 +70,6 @@ public class RobotArmManager implements Runnable {
                 String achse = "";
                 int wert = extractValue(json, "wert");
 
-                // Das 'arm'-Objekt ist thread-safe (die HAL regelt das meist intern)
                 if (json.contains("\"leftRight\"")) {
                     arm.setLeftRightPercentageTo(wert);
                     achse = "leftRight";
@@ -85,6 +82,9 @@ public class RobotArmManager implements Runnable {
                 } else if (json.contains("\"openClose\"")) {
                     arm.setOpenClosePercentageTo(wert);
                     achse = "openClose";
+                } else {
+                    String response = String.format("{\"befehl\": \"error\", \"code\": \"unbekannter befehl\"}");
+                    out.println(response);
                 }
 
                 if (!achse.isEmpty()) {
@@ -97,7 +97,7 @@ public class RobotArmManager implements Runnable {
     }
 
     private void sendConfirmation(String achse, int wert, PrintWriter out) {
-        String response = String.format("{\"status\": \"executed\", \"achse\": \"%s\", \"wert\": %d}", achse, wert);
+        String response = String.format("{\"befehl\": \"executed\", \"achse\": \"%s\", \"wert\": %d}", achse, wert);
         out.println(response);
     }
 

@@ -27,14 +27,14 @@ public class Main {
 
         System.out.print("Geben Sie die IP-Adresse des Servers/Roboters ein (z.B. 127.0.0.1): ");
         config.ip = scanner.nextLine();
-        if (config.ip.isEmpty()) config.ip = "127.0.0.1"; // Default
+        if (config.ip.isEmpty()) config.ip = "127.0.0.1";
 
         while (true) {
             System.out.print("Geben Sie den Port ein (z.B. 5555): ");
             String portInput = scanner.nextLine();
             try {
                 config.port = Integer.parseInt(portInput);
-                break; // Erfolgreich geparst
+                break;
             } catch (NumberFormatException e) {
                 System.out.println("Ungültige Eingabe! Bitte geben Sie eine Zahl für den Port ein.");
             }
@@ -62,10 +62,8 @@ public class Main {
 
             String answer = "";
             int counter = 0;
-            String baseName = config.nodeName; // Den ursprünglichen Namen speichern
-
+            String baseName = config.nodeName;
             do {
-                // Falls counter > 0, hänge die Zahl an den Basisnamen an
                 String currentName = (counter == 0) ? baseName : baseName + counter;
 
                 String jsonRegistration = String.format(
@@ -80,14 +78,13 @@ public class Main {
 
                 if (!answer.contains("{\"befehl\": \"Ok\"")) {
                     System.out.println("Fehler beim Registrieren. Probiere nächsten Namen...");
-                    counter++; // Erhöhe die Zahl für den nächsten Durchgang
+                    counter++;
                 }
             } while(answer == null || !answer.contains("{\"befehl\": \"Ok\""));
 
             config.nodeName =  (counter == 0 ? baseName : baseName + counter);
             System.out.println("Erfolgreich registriert als: " + config.nodeName);
 
-            // 2. Keep-Alive starten
             keepAlive.start(out);
 
             RobotArmManager manager = new RobotArmManager(myPort, true, "127.0.0.1", 0);
@@ -95,9 +92,8 @@ public class Main {
 
             System.out.println("Verbunden. Drücke ENTER zum Abmelden...");
             Scanner sc = new Scanner(System.in);
-            sc.nextLine(); // Das Programm bleibt hier stehen, bis du ENTER drückst
+            sc.nextLine(); //wartet auf enter
 
-        // Erst wenn der User ENTER drückt, wird der Rest ausgeführt:
             keepAlive.stop();
             manager.stop();
             socket.close();
