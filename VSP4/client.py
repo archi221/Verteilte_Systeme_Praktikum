@@ -17,7 +17,7 @@ class server_data(Datastore):
     def __init__(self) -> None:
         s = socket(AF_INET, SOCK_STREAM)
         try:
-            s.connect(("127.0.0.1", 7777)) # connect t o server (block until accepted) 127.0.0.1 localhost
+            s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
         except Exception as e:
             print(f"Error: {e}")
             exit()

@@ -1,5 +1,6 @@
 from socket import *
 import json
+
 class Server:
     def run(self):
         s = socket(AF_INET, SOCK_STREAM)
