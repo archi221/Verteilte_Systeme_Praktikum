@@ -222,11 +222,15 @@ def send_move(node_ip: str, node_port: int, achse: str, wert: int):
 
 
 #---------------------------MAIN----------------------------
-SERVER_IP = "127.0.0.1"
+SERVER_IP = "192.168.193.98"
 SERVER_PORT = 7777
+<<<<<<< Updated upstream
 
 OWN_IP = "127.0.0.1"
 
+=======
+OWN_IP = "192.168.193.98"
+>>>>>>> Stashed changes
 OWN_PORT = int(input("Eigener Port (z.B. 5001): "))
 
 print("Wie ist der Name des Clients?")
