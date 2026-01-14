@@ -4,7 +4,9 @@ import json
 class Server:
     def run(self):
         s = socket(AF_INET, SOCK_STREAM)
-        s.bind(("127.0.0.1", 7777))
+        port = input("Port: ")
+        
+        s.bind(("192.168.193.98", port))
         s.listen(1)
         (conn, addr) = s.accept() # returns new socket and addr. client
         while True: # forever
