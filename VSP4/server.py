@@ -1,20 +1,50 @@
 from socket import *
 import json
+import threading
+import signal
+from concurrent.futures import ThreadPoolExecutor
 
-class Server:
-    def run(self):
-        s = socket(AF_INET, SOCK_STREAM)
-        port = input("Port: ")
-        
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+MAX_CLIENTS = 10
+
+data_lock = threading.Lock()
+daten = ["cat", "dog", "papagei", "pigeon", "hamster", "lion", "dino", "koala"]
+
+def main():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    try:
+        port = int(input("Port: ")) 
         s.bind(("192.168.193.98", port))
-        s.listen(1)
-        (conn, addr) = s.accept() # returns new socket and addr. client
-        while True: # forever
-            bytes = conn.recv(1024) # receive data from client
+        s.listen(MAX_CLIENTS)
+        print(f"Server läuft auf Port {port}...")
+    except Exception as e:
+        print(f"Fehler beim Starten des Servers: {e}")
+        return
 
-            if not bytes: continue
-            data = bytes.decode()
-            data_unmarsh = json.loads(data)
+    with ThreadPoolExecutor(max_workers=MAX_CLIENTS) as executor:
+        while True:
+            try:
+                conn, addr = s.accept()
+                print(f"Verbindung von {addr}")
+##################################################################################################              
+#### wird zwar von mit threadpool gestartet aber geht von immer genau einem client der anfragt aus
+### Threadpol damit viele anfragen hintereinanderr kommen können###
+##################################################################################################
+                executor.submit(handle_client, conn)
+                
+            except Exception as e:
+                print(f"Fehler bei der Verbindungsannahme: {e}")
+
+def handle_client(conn):
+    while True:
+        try:
+            bytes = conn.recv(1024)
+            if not bytes: break
+
+            data_unmarsh = json.loads(bytes.decode())
 
             if data_unmarsh["method"] == "write":
                 try:
@@ -30,8 +60,7 @@ class Server:
                         answer = {
                         "ok": 1,
                         "return": 0
-                    }
-                
+                    }               
             elif data_unmarsh["method"] == "read":
                 try:
                     read_answer = read(data_unmarsh["v1"])
@@ -59,14 +88,18 @@ class Server:
             bytes_data = json_data.encode()
             conn.send(bytes_data)
 
-        conn.close() # close the connection
+        except Exception as e:
+            print(f"error in handle Client: {e}")
+        finally:
+            conn.close()
 
-daten = ["cat", "dog", "papagei", "pigeon", "hamster", "lion", "dino", "koala"]
 def write(i: int, d:str):
+    global daten
     daten[i] = d
 
-def read(i: int): 
+def read(i: int):
+    global daten 
     return daten[i]
 
-s = Server
-s.run(s) # type: ignore
+if __name__ == "__main__":
+    main()
