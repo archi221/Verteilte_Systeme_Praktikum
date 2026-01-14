@@ -170,6 +170,11 @@ def sende_token_zu_nachfolger() -> bool:
     port = nachfolger.get("port")
     name = nachfolger.get("name")
 
+    if ip == OWN_IP and port == OWN_PORT:
+        print("Du bist alleiniger Client, TOKEN bleibt bei dir.")
+        return True
+
+
     try:
         sendSocket = socket(AF_INET, SOCK_STREAM)
         sendSocket.settimeout(2.0)
