@@ -27,7 +27,7 @@ def register(client_name) -> tuple[bool, bool]:
         if token:
             print("Du bist alleiniger Client und hast den TOKEN.")
         else:
-            print("Registriert. Warte auf TOKEN von Vorgänger.")
+            print("Warte auf TOKEN von Vorgänger.")
         return True, token
     else:
         code = data.get("code")
@@ -48,7 +48,6 @@ def unregister() -> bool:
     data = json.loads(json_data)
     answer = data.get("befehl")
     if answer == "Ok":
-        print("Erfolgreich abgemeldet!")
         return True
     else:
         print("Beim Abmelden ist ein Fehler aufgetaucht!")
@@ -136,6 +135,16 @@ def start_token_listener():
                         token = True
                         token_erhalten_event.set()
                         print("\n TOKEN erhalten, du darfst arbeiten.")
+                        # Nodes anzeigen
+                        nodes = liste_nodes()
+                        nodes_cache = nodes or []
+                        print("\n Verfügbare Nodes:")
+                        if not nodes_cache:
+                            print("  (keine)")
+                        else:
+                            for name, cid, ip, port in nodes_cache:
+                                print(f"  - {name} (id={cid}) {ip}:{port}")
+                        # Prompt reparieren
                         print("NODE> ", end="", flush=True)
             except Exception:
                 pass
@@ -182,6 +191,7 @@ def sende_token_zu_nachfolger() -> bool:
 
         token = False
         print(f"TOKEN gesendet an {name} ({ip}:{port})")
+        print("Warte auf Token, normaler Betrieb weiterhin möglich")
         return True
     except Exception as e:
         print(f"Token senden fehlgeschlagen: {e}")
@@ -221,7 +231,7 @@ nodes_cache = []
 
 while True:
 
-    if token_erhalten_event.is_set():
+    if registered and token_erhalten_event.is_set():
         token_erhalten_event.clear()
         nodes = liste_nodes()
         nodes_cache = nodes or []
@@ -267,21 +277,34 @@ while True:
     if registered:
         match user_input:
             case "dead":
+                if token:
+                    sende_token_zu_nachfolger()
+
+                token_stop.set()
+
                 try:
-                    ok = unregister()
+                    unregister()
                 except Exception as e:
                     print(f"Unregister fehlgeschlagen: {e}")
-                    ok = False
 
-                # Wenn erfolgreich abgemeldet: Socket schließen, Status zurücksetzen
-                if ok:
-                    registered = False
-                    connected = False
-                    try:
-                        s.close()
-                    except Exception:
-                        pass
-                    s = socket(AF_INET, SOCK_STREAM)
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+                registered = False
+                connected = False
+                token = False
+                nodes_cache.clear()
+
+                token_erhalten_event.clear()
+                token_stop = threading.Event()
+
+                s = socket(AF_INET, SOCK_STREAM)
+
+                print("Abgemeldet. Du kannst dich erneut mit 'register' anmelden.")
+                continue
+
 
             case "nachbarn":
                 try:
@@ -293,7 +316,9 @@ while True:
                     continue
 
                 vorgänger, nachfolger = answer
-                print(f"Test: {vorgänger}, {nachfolger}")
+                vName, vIp, vPort = vorgänger.get("name"), vorgänger.get("ip"), vorgänger.get("port")
+                nName, nIp, nPort = nachfolger.get("name"), nachfolger.get("ip"), nachfolger.get("port")
+                print(f"Vorgänger: {vName}, {vIp}:{vPort} \nNachfolger: {nName}, {nIp}:{nPort}")
                 continue
 
             case "liste client":
@@ -312,15 +337,17 @@ while True:
             case "liste node":
                 try:
                     answer = liste_nodes()
-                    if answer is None:
-                        print("Keine Nodes vorhanden")
+                    if not answer:
+                        print("\n Verfügbare Nodes:")
+                        print("  (keine)")
                         continue
                 except Exception as e:
                     print(f"Liste_Nodes fehlgeschlagen: {e}")
                     continue
 
                 for name, cid, ip, port in answer:
-                    print(f"{name} (id={cid}) {ip}:{port}")
+                    print("\n Verfügbare Nodes:")
+                    print(f"  - {name} (id={cid}) {ip}:{port}")
                 continue
             
             case "work done":
@@ -373,8 +400,21 @@ while True:
                 if targets_raw == "all":
                     targets = nodes
                 else:
-                    target_names = [n.strip() for n in targets_raw.split(",")]
-                    targets = [n for n in nodes if n[0] in target_names]
+                    #"NodeA,NodeB" oder "1,3"
+                    requested = [x.strip() for x in targets_raw.split(",") if x.strip()]
+
+                    targets = []
+                    for req in requested:
+                        if req.isdigit():
+                            req_id = int(req)
+                            match_node = next((n for n in nodes if n[1] == req_id), None)  # n[1] = id
+                        else:
+                            match_node = next((n for n in nodes if n[0] == req), None)     # n[0] = name
+
+                        if match_node:
+                            targets.append(match_node)
+                        else:
+                            print(f"Node nicht gefunden: {req}")
 
                     if not targets:
                         print("Keine der angegebenen Nodes gefunden.")
