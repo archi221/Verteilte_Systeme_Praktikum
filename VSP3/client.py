@@ -204,10 +204,21 @@ def send_move(node_ip: str, node_port: int, achse: str, wert: int):
         sock.settimeout(3.0)
         sock.connect((node_ip, node_port))
         sock.sendall((json.dumps(payload) + "\n").encode("utf-8"))
-        sock.close()
         print(f"move gesendet an {node_ip}:{node_port} ({achse}={wert})")
     except Exception as e:
         print(f"move fehlgeschlagen ({node_ip}:{node_port}): {e}")
+    else:
+        msg = sock.recv(1024)
+        data = json.loads(msg.decode("utf-8").strip())
+        befehl = data.get("befehl")
+        if befehl == "executed":
+            print("Befehl erfolgreich gesendet!")
+        else:
+            code = data.get("code")
+            print(f"Befehl nicht erfolgreich gesendet. Error: {code}!")
+        sock.close()
+        
+    
 
 
 #---------------------------MAIN----------------------------
