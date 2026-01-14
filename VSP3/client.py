@@ -136,6 +136,7 @@ def start_token_listener():
                         token = True
                         token_erhalten_event.set()
                         print("\n TOKEN erhalten, du darfst arbeiten.")
+                        print("NODE> ", end="", flush=True)
             except Exception:
                 pass
             finally:
