@@ -328,7 +328,7 @@ while True:
                 continue
 
             case "move":
-                print("Syntax:")
+                print("Beispiel Syntax:")
                 print("  move all <achse> <wert>")
                 print("  move NodeA,NodeB <achse> <wert>")
                 print("Achsen: leftRight | upDown | backForth | openClose")
@@ -341,7 +341,7 @@ while True:
 
                 parts = cmd.split()
                 if len(parts) != 4:
-                    print("Syntax:")
+                    print("Beispiel Syntax:")
                     print("  move all <achse> <wert>")
                     print("  move NodeA,NodeB <achse> <wert>")
                     continue
