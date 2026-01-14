@@ -77,14 +77,16 @@ class client_data(Datastore):
 c = client_data()
 s = server_data()
 
+key = 4
+value = "value"
 
 
 # Annahme: c = ClientDatastore(), s = ServerDatastore()
 # Du hast die schon gebaut, also hier nur die Nutzung:
 # c.write(key, value)
 # c.read(key)
-s.write(5, "value")
-# s.read(key)
+s.write(5, value)
+s.read(key)
 
 
 # ------------------------------------Testen der Latenz-----------------------------
