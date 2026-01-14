@@ -385,6 +385,7 @@ while True:
                     print("Beispiel Syntax:")
                     print("  move all <achse> <wert>")
                     print("  move NodeA,NodeB <achse> <wert>")
+                    print("Achsen: leftRight | upDown | backForth | openClose")
                     continue
 
                 targets_raw = parts[1]
