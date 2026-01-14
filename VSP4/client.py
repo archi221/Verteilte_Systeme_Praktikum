@@ -3,6 +3,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Protocol, Any, Dict
 import time
+from collections import deque
 
 class Datastore(ABC):
     @abstractmethod
@@ -15,27 +16,32 @@ class Datastore(ABC):
 
 class server_data(Datastore):
     def __init__(self) -> None:
-        s = socket(AF_INET, SOCK_STREAM)
-        try:
-            s.connect(("127.0.0.1", 7777)) # connect to server (block until accepted) 127.0.0.1 localhost
-        except Exception as e:
-            print(f"Error: {e}")
-            exit()
-        else:
-            self.s = s
+        self.serverList = []
+        self.serverQueue = deque()
+        datei = open('Serverliste.txt','r')
+        liste = datei.read().split("\n")
+        for eintrag in liste:
+            ip, port = eintrag.split(",")
+            port = int(port)
+            self.serverList.append((ip, port))
+            self.serverQueue.append((ip, port))
     
     def read(self, key: int) -> Any:
-        liste = {"method": "read", "v1":key}
-        marsh_data = json.dumps(liste)
-        bytes_data = marsh_data.encode()
-        self.s.send(bytes_data) # send same data
+        while(True):
+            liste = {"method": "read", "v1":key}
+            marsh_data = json.dumps(liste)
+            bytes_data = marsh_data.encode()
+            eintrag = self.serverQueue.popleft()
+            self.serverQueue.append(eintrag)
+            s = socket(eintrag)
+            s.send(bytes_data) # send same data
 
-        bytes = self.s.recv(1024) # receive the response
-        json_data = bytes.decode()
-        data = json.loads(json_data)
-        if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data['return']}")
-        return data["return"]
+            bytes = s.recv(1024) # receive the response
+            json_data = bytes.decode()
+            data = json.loads(json_data)
+            if (data["ok"] == 1):
+                return data["return"]
+                
 
       
     
@@ -43,14 +49,16 @@ class server_data(Datastore):
         liste = {"method": "write", "v1":key, "v2": value}
         marsh_data = json.dumps(liste)
         bytes_data = marsh_data.encode()
-        self.s.send(bytes_data) # send same data
+        for eintrag in self.serverList:
+            s = socket(eintrag)
+            s.send(bytes_data) # send same data
 
-        bytes = self.s.recv(1024) # receive the response
-        json_data = bytes.decode()
-        data = json.loads(json_data)
-        if (data["ok"] == 0):
-            raise Exception(f"Server returned error: {data['return']}")
-        return
+            bytes = s.recv(1024) # receive the response
+            json_data = bytes.decode()
+            data = json.loads(json_data)
+            if (data["ok"] == 0):
+                self.serverList.remove(eintrag)
+                self.serverQueue.remove(eintrag)
 
 
 
