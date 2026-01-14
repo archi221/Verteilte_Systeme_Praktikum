@@ -161,10 +161,8 @@ def sende_token_zu_nachfolger() -> bool:
         print("Kann Token nicht senden: keine Nachbarn")
         return False
 
-    alone, _, nachfolger = nachbarn
-    if alone:
-        print("Du bist alleiniger Client, TOKEN bleibt bei dir.")
-        return True
+    _, nachfolger = nachbarn
+
 
     ip = nachfolger.get("ip")
     port = nachfolger.get("port")

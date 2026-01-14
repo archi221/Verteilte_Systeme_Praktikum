@@ -58,7 +58,7 @@ public class Main {
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
             String myIP = socket.getLocalAddress().getHostAddress();
-            int myPort = socket.getLocalPort();
+            int myPort = 7778;
 
             String answer = "";
             int counter = 0;
@@ -90,8 +90,8 @@ public class Main {
             // 2. Keep-Alive starten
             keepAlive.start(out);
 
-            Thread armThread = new Thread(new RobotArmManager(in, out, true, config.ip, config.port));
-            armThread.start();
+            RobotArmManager manager = new RobotArmManager(myPort, true, "127.0.0.1", 0);
+            new Thread(manager).start();
 
             System.out.println("Verbunden. Drücke ENTER zum Abmelden...");
             Scanner sc = new Scanner(System.in);
@@ -99,7 +99,7 @@ public class Main {
 
         // Erst wenn der User ENTER drückt, wird der Rest ausgeführt:
             keepAlive.stop();
-            armThread.interrupt();
+            manager.stop();
             socket.close();
             out.println("{\"befehl\": \"dead\"}");
             out.flush();
