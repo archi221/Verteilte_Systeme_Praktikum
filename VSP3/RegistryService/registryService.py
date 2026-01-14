@@ -1,15 +1,15 @@
 from socket import *
 import json
 import signal
+from concurrent.futures import ThreadPoolExecutor
 import threading
-import time
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 7777
-MAX_CLIENTS = 100
+MAX_CLIENTS = 20
 
 server_socket = socket(AF_INET, SOCK_STREAM)
 server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -36,7 +36,7 @@ def client_daemon(conn):
 
 def handle_node(conn, client_name):
     print("startet handle node")
-    conn.settimeout(3.0)
+    conn.settimeout(2.0)
     try:
         while True:
             bytes_received = conn.recv(1024)
@@ -48,16 +48,17 @@ def handle_node(conn, client_name):
                 print(f"Unerwarteter Befehl: {data.get('befehl')}")
             
     except TimeoutError:
-        print(f"Timeout bei Kommunikation mit {client_name} - Keine Daten innerhalb von 3 Sekunden")
+        print(f"Timeout bei Kommunikation mit {client_name} - Keine Daten innerhalb von 2 Sekunden")
     except Exception as e:
-        print(f"error {client_name}: {e}")
+        print(f"error von {client_name}: {e}")
     finally:
         with data_lock:
-            robot_nodes.pop(client_name, None)
+            robot_nodes.pop(client_name)
         conn.close()
 
 def handle_client(conn, mein_name):
     try:
+        conn.settimeout(2.0)
         while True:
             received_bytes = conn.recv(1024)
             if not received_bytes:
@@ -102,22 +103,18 @@ def handle_client(conn, mein_name):
                 conn.sendall((json.dumps(antwort) + "\n").encode("utf-8"))
 
             elif befehl == "dead":
-                with data_lock:
-                    if mein_name in clients_token_ring:
-                        clients_token_ring.remove(mein_name)
-                    clients.pop(mein_name, None)
-                    robot_nodes.pop(mein_name, None)
-
                 conn.sendall((json.dumps({"befehl": "Ok"}) + "\n").encode("utf-8"))
                 return
 
-    except Exception:
-        pass
+    except TimeoutError:
+        print(f"Timeout bei Kommunikation mit {mein_name} - Keine Daten innerhalb von 2 Sekunden")
+    except Exception as e:
+        print(f"error von {mein_name}: {e}")
     finally:
         with data_lock:
             if mein_name in clients_token_ring:
                 clients_token_ring.remove(mein_name)
-            clients.pop(mein_name, None)
+            clients.pop(mein_name)
         conn.close()
 
 def accept_new_client(conn):
@@ -156,8 +153,7 @@ def accept_new_client(conn):
         print("error in accept_new_client")
         return None, None
 
-while True:
-    conn, addr = server_socket.accept()
-    t = threading.Thread(target=client_daemon, args=(conn,))
-    t.daemon = True
-    t.start()
+with ThreadPoolExecutor(max_workers=MAX_CLIENTS) as executor:
+    while True:
+        conn, _ = server_socket.accept()
+        executor.submit(client_daemon, conn)
