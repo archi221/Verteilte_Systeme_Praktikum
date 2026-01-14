@@ -78,11 +78,11 @@ public class Main {
                 out.flush();
                 answer = in.readLine();
 
-                if (!"{\"befehl\": \"Ok\"}".equals(answer)) {
+                if (!answer.contains("{\"befehl\": \"Ok\"")) {
                     System.out.println("Fehler beim Registrieren. Probiere nächsten Namen...");
                     counter++; // Erhöhe die Zahl für den nächsten Durchgang
                 }
-            } while(answer == null || !answer.equals("{\"befehl\": \"Ok\"}"));
+            } while(answer == null || !answer.contains("{\"befehl\": \"Ok\""));
 
             config.nodeName =  (counter == 0 ? baseName : baseName + counter);
             System.out.println("Erfolgreich registriert als: " + config.nodeName);
