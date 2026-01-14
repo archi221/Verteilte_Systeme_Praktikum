@@ -7,7 +7,7 @@ import threading
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-SERVER_IP = "192.168.193.98"
+SERVER_IP = "127.0.0.1"
 SERVER_PORT = 7777
 MAX_CLIENTS = 20
 
