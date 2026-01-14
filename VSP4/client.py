@@ -74,7 +74,7 @@ class client_data(Datastore):
 
 #---------------------------------------------------------------
 
-c = client_data()
+#c = client_data()
 s = server_data()
 
 key = 4
@@ -85,8 +85,8 @@ value = "value"
 # Du hast die schon gebaut, also hier nur die Nutzung:
 # c.write(key, value)
 # c.read(key)
-s.write(5, value)
-s.read(key)
+#s.write(5, value)
+#s.read(key)
 
 
 # ------------------------------------Testen der Latenz-----------------------------
@@ -121,10 +121,10 @@ server_write_result, server_write_time = time_single_call(s.write, 5, "Test")
 server_read_result, server_read_time = time_single_call(s.read, 5)
 
 # 3. CLIENT write 1000x messen
-client_write_result, client_write_total, client_write_avg = time_multi_call(c.write, N, 5, "Test")
-
+#client_write_result, client_write_total, client_write_avg = time_multi_call(c.write, N, 5, "Test")
+#
 # 4. CLIENT read 1000x messen
-client_read_result, client_read_total, client_read_avg = time_multi_call(c.read, N, 5)
+#client_read_result, client_read_total, client_read_avg = time_multi_call(c.read, N, 5)
 
 
 # --- AUSGABE ---
@@ -136,11 +136,11 @@ print(f"   Dauer gesamt (1x): {server_write_time * 1000:.3f} ms")
 print(f"Server.read(5) -> {server_read_result}")
 print(f"   Dauer gesamt (1x): {server_read_time * 1000:.3f} ms")
 
-print(f"Client.write(5, 'Test') -> {client_write_result}")
-print(f"   Dauer gesamt ({N}x): {client_write_total * 1000:.3f} ms")
-print(f"   Durchschnitt/Aufruf: {client_write_avg * 1000:.6f} ms")
-
-print(f"Client.read(5) -> {client_read_result}")
-print(f"   Dauer gesamt ({N}x): {client_read_total * 1000:.3f} ms")
-print(f"   Durchschnitt/Aufruf: {client_read_avg * 1000:.6f} ms")
+#print(f"Client.write(5, 'Test') -> {client_write_result}")
+#print(f"   Dauer gesamt ({N}x): {client_write_total * 1000:.3f} ms")
+#print(f"   Durchschnitt/Aufruf: {client_write_avg * 1000:.6f} ms")
+#
+#print(f"Client.read(5) -> {client_read_result}")
+#print(f"   Dauer gesamt ({N}x): {client_read_total * 1000:.3f} ms")
+#print(f"   Durchschnitt/Aufruf: {client_read_avg * 1000:.6f} ms")
 
