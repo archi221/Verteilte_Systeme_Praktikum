@@ -68,7 +68,6 @@ def neighbours() -> Any:
     data = json.loads(json_data)
     if data.get("befehl") == "nachbarn_antwort":
         return (
-            data.get("alleiniger_Client"),
             data.get("vorgänger"),
             data.get("nachfolger"),
         )
@@ -206,7 +205,7 @@ def send_move(node_ip: str, node_port: int, achse: str, wert: int):
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 7777
 OWN_IP = "127.0.0.1"
-OWN_PORT = 5001
+OWN_PORT = int(input("Eigener Port (z.B. 5001): "))
 
 print("Wie ist der Name des Clients?")
 client_name = input()
@@ -294,8 +293,8 @@ while True:
                     print(f"Neighbours fehlgeschlagen: {e}")
                     continue
 
-                alone, vorgänger, nachfolger = answer
-                print(f"Test: {alone}, {vorgänger}, {nachfolger}")
+                vorgänger, nachfolger = answer
+                print(f"Test: {vorgänger}, {nachfolger}")
                 continue
 
             case "liste client":
