@@ -13,11 +13,11 @@ data_lock = threading.Lock()
 daten = ["cat", "dog", "papagei", "pigeon", "hamster", "lion", "dino", "koala"]
 
 def main():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s = socket(AF_INET, SOCK_STREAM)
     
     try:
         port = int(input("Port: ")) 
-        s.bind(("192.168.193.98", port))
+        s.bind(("127.0.0.1", port))
         s.listen(MAX_CLIENTS)
         print(f"Server läuft auf Port {port}...")
     except Exception as e:
@@ -39,8 +39,8 @@ def main():
                 print(f"Fehler bei der Verbindungsannahme: {e}")
 
 def handle_client(conn):
-    while True:
-        try:
+    try:
+        while True:
             bytes = conn.recv(1024)
             if not bytes: break
 
@@ -81,17 +81,16 @@ def handle_client(conn):
                 }
             else : break
             print(data_unmarsh)
-            print(daten)
             
 
             json_data = json.dumps(answer)
             bytes_data = json_data.encode()
             conn.send(bytes_data)
 
-        except Exception as e:
-            print(f"error in handle Client: {e}")
-        finally:
-            conn.close()
+    except Exception as e:
+        print(f"error in handle Client: {e}")
+    finally:
+        conn.close()
 
 def write(i: int, d:str):
     global daten

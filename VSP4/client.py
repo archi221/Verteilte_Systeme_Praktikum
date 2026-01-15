@@ -4,6 +4,11 @@ from abc import ABC, abstractmethod
 from typing import Protocol, Any, Dict
 import time
 from collections import deque
+import signal
+
+amount_servers = 0
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 class Datastore(ABC):
     @abstractmethod
@@ -20,7 +25,10 @@ class server_data(Datastore):
         self.serverQueue = deque()
         datei = open('Serverliste.txt','r')
         liste = datei.read().split("\n")
+
+        global amount_servers
         for eintrag in liste:
+            amount_servers = amount_servers + 1
             ip, port = eintrag.split(",")
             port = int(port)
             self.serverList.append((ip, port))
@@ -33,10 +41,11 @@ class server_data(Datastore):
             bytes_data = marsh_data.encode()
             eintrag = self.serverQueue.popleft()
             self.serverQueue.append(eintrag)
-            s = socket(eintrag)
-            s.send(bytes_data) # send same data
+            s = socket(AF_INET, SOCK_STREAM)
+            s.connect(eintrag)
+            s.send(bytes_data) 
 
-            bytes = s.recv(1024) # receive the response
+            bytes = s.recv(1024) 
             json_data = bytes.decode()
             data = json.loads(json_data)
             if (data["ok"] == 1):
@@ -50,8 +59,9 @@ class server_data(Datastore):
         marsh_data = json.dumps(liste)
         bytes_data = marsh_data.encode()
         for eintrag in self.serverList:
-            s = socket(eintrag)
-            s.send(bytes_data) # send same data
+            s = socket(AF_INET, SOCK_STREAM)
+            s.connect(eintrag)
+            s.send(bytes_data)
 
             bytes = s.recv(1024) # receive the response
             json_data = bytes.decode()
@@ -129,12 +139,15 @@ server_read_result, server_read_time = time_single_call(s.read, 5)
 
 # --- AUSGABE ---
 
-print("=== Ergebnisse ===")
-print(f"Server.write(5, 'Test') -> {server_write_result}")
-print(f"   Dauer gesamt (1x): {server_write_time * 1000:.3f} ms")
+print(f"""=== Ergebnisse ===
+Anzahl Server: {amount_servers}
 
-print(f"Server.read(5) -> {server_read_result}")
-print(f"   Dauer gesamt (1x): {server_read_time * 1000:.3f} ms")
+Server.write(5, 'Test') -> {server_write_result}
+    Dauer gesamt (1x): {server_write_time * 1000:.3f} ms
+
+Server.read(5) -> {server_read_result}      
+    Dauer gesamt (1x): {server_read_time * 1000:.3f} ms        
+      """)
 
 #print(f"Client.write(5, 'Test') -> {client_write_result}")
 #print(f"   Dauer gesamt ({N}x): {client_write_total * 1000:.3f} ms")
