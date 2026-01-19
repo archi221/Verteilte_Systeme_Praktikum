@@ -23,7 +23,7 @@ class server_data(Datastore):
     def __init__(self) -> None:
         self.serverList = []
         self.serverQueue = deque()
-        datei = open('Serverliste.txt','r')
+        datei = open('VSP4/Serverliste.txt','r')
         liste = datei.read().split("\n")
 
         global amount_servers
@@ -80,7 +80,7 @@ class server_data(Datastore):
             except Exception as e:
                 print(e)
                 lost_connenction.append(eintrag)
-        print(f"Es habe {len(lost_connenction)} server die verbindung verloren")
+        print(f"Es haben {len(lost_connenction)} server die verbindung verloren")
         for eintrag in lost_connenction:
             self.serverList.remove(eintrag)
             self.serverQueue.remove(eintrag)
