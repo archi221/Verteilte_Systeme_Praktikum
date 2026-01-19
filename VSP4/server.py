@@ -17,7 +17,7 @@ def main():
     
     try:
         port = int(input("Port: ")) 
-        s.bind(("127.0.0.1", port))
+        s.bind(("192.168.193.98", port))
         s.listen(MAX_CLIENTS)
         print(f"Server läuft auf Port {port}...")
     except Exception as e:

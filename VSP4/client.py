@@ -33,6 +33,8 @@ class server_data(Datastore):
             port = int(port)
             self.serverList.append((ip, port))
             self.serverQueue.append((ip, port))
+        print(len(self.serverList))
+        datei.close()
     
     def read(self, key: int) -> Any:
         while(True):
@@ -41,15 +43,21 @@ class server_data(Datastore):
             bytes_data = marsh_data.encode()
             eintrag = self.serverQueue.popleft()
             self.serverQueue.append(eintrag)
-            s = socket(AF_INET, SOCK_STREAM)
-            s.connect(eintrag)
-            s.send(bytes_data) 
+            try:
+                s = socket(AF_INET, SOCK_STREAM)
+                s.settimeout(1.0)
+                s.connect(eintrag)
+                s.send(bytes_data) 
 
-            bytes = s.recv(1024) 
-            json_data = bytes.decode()
-            data = json.loads(json_data)
-            if (data["ok"] == 1):
-                return data["return"]
+                bytes = s.recv(1024) 
+                json_data = bytes.decode()
+                data = json.loads(json_data)
+                if (data["ok"] == 1):
+                    return data["return"]
+            except Exception:
+                s.close() 
+
+            
                 
 
       
@@ -58,17 +66,25 @@ class server_data(Datastore):
         liste = {"method": "write", "v1":key, "v2": value}
         marsh_data = json.dumps(liste)
         bytes_data = marsh_data.encode()
+        lost_connenction = []
         for eintrag in self.serverList:
-            s = socket(AF_INET, SOCK_STREAM)
-            s.connect(eintrag)
-            s.send(bytes_data)
+            try:
+                s = socket(AF_INET, SOCK_STREAM)
+                s.settimeout(1.0)
+                s.connect(eintrag)
+                s.send(bytes_data)
 
-            bytes = s.recv(1024) # receive the response
-            json_data = bytes.decode()
-            data = json.loads(json_data)
-            if (data["ok"] == 0):
-                self.serverList.remove(eintrag)
-                self.serverQueue.remove(eintrag)
+                bytes = s.recv(1024)
+                json_data = bytes.decode()
+                data = json.loads(json_data)
+            except Exception as e:
+                print(e)
+                lost_connenction.append(eintrag)
+        print(f"Es habe {len(lost_connenction)} server die verbindung verloren")
+        for eintrag in lost_connenction:
+            self.serverList.remove(eintrag)
+            self.serverQueue.remove(eintrag)
+            
 
 
 
